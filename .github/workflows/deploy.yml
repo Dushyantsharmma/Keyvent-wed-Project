@@ -1,3 +1,21 @@
+# Name of your workflow
+name: Build and Deploy to GitHub Pages
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push events but only for the "main" branch
+  push:
+    branches: ["main"]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets the permissions for the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # Build job
   build:
@@ -5,36 +23,47 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '18' # Or your preferred Node.js version
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Build
         run: npm run build
-        
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
-        
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
+          # This should be the directory where your build output is located
           path: './dist'
 
   # Deployment job
   deploy:
-    runs-on: ubuntu-latest
+    # Add a dependency to the build job
     needs: build
+
+    # Grant GITHUB_TOKEN the permissions required to deploy to pages
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    # Specify runner + deployment step
+    runs-on: ubuntu-latest
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          # Path must match the folder where your built files are stored
-          # e.g., ./dist if you built into dist
-          artifact-path: './dist'
+        # This step does NOT need a 'with' block or an 'artifact-path'
